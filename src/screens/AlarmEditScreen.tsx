@@ -19,6 +19,7 @@ import { getAlarmById, saveAlarm, generateId, deleteAlarm } from '../services/St
 import { scheduleAlarm, cancelAlarm } from '../services/NotificationService';
 import { Button, Card, Toggle } from '../components';
 import { colors, spacing, typography, borderRadius } from '../theme';
+import { playPreview, stopSound, getSoundDisplayName } from '../services/AudioService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AlarmEdit'>;
 type RouteProps = RouteProp<RootStackParamList, 'AlarmEdit'>;
@@ -413,26 +414,38 @@ export const AlarmEditScreen: React.FC = () => {
                 <Card style={styles.section}>
                     <Text style={styles.sectionTitle}>Alarm Sound</Text>
                     <View style={styles.soundOptions}>
-                        {['default', 'alarm1', 'alarm2', 'alarm3', 'alarm4', 'alarm5'].map((sound, index) => (
-                            <TouchableOpacity
-                                key={sound}
-                                style={[
-                                    styles.soundButton,
-                                    alarm.soundUri === sound && styles.soundButtonActive,
-                                ]}
-                                onPress={() => setAlarm({ ...alarm, soundUri: sound })}
-                            >
-                                <Text
+                        {['default', 'alarm1', 'alarm2', 'alarm3', 'alarm4', 'alarm5'].map((sound) => (
+                            <View key={sound} style={styles.soundRow}>
+                                <TouchableOpacity
                                     style={[
-                                        styles.soundButtonText,
-                                        alarm.soundUri === sound && styles.soundButtonTextActive,
+                                        styles.soundButton,
+                                        alarm.soundUri === sound && styles.soundButtonActive,
                                     ]}
+                                    onPress={() => setAlarm({ ...alarm, soundUri: sound })}
                                 >
-                                    {sound === 'default' ? '🔔 Default' : `🎵 Sound ${index}`}
-                                </Text>
-                            </TouchableOpacity>
+                                    <Text
+                                        style={[
+                                            styles.soundButtonText,
+                                            alarm.soundUri === sound && styles.soundButtonTextActive,
+                                        ]}
+                                    >
+                                        {getSoundDisplayName(sound)}
+                                    </Text>
+                                </TouchableOpacity>
+                                {sound !== 'default' && (
+                                    <TouchableOpacity
+                                        style={styles.previewButton}
+                                        onPress={() => playPreview(sound)}
+                                    >
+                                        <Text style={styles.previewButtonText}>▶️</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
                         ))}
                     </View>
+                    <TouchableOpacity style={styles.stopButton} onPress={stopSound}>
+                        <Text style={styles.stopButtonText}>⏹ Stop Preview</Text>
+                    </TouchableOpacity>
                 </Card>
 
                 {/* Optional Features */}
@@ -713,6 +726,28 @@ const styles = StyleSheet.create({
     soundButtonTextActive: {
         color: colors.black,
         fontWeight: typography.semibold,
+    },
+    soundRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    previewButton: {
+        padding: spacing.xs,
+    },
+    previewButtonText: {
+        fontSize: 16,
+    },
+    stopButton: {
+        marginTop: spacing.md,
+        alignItems: 'center',
+        padding: spacing.sm,
+        backgroundColor: colors.surfaceLight,
+        borderRadius: borderRadius.md,
+    },
+    stopButtonText: {
+        fontSize: typography.caption,
+        color: colors.textSecondary,
     },
     // Modal styles
     modalOverlay: {

@@ -1,6 +1,6 @@
 {
   "name": "risewell",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -21,7 +21,8 @@
     "react-native-date-picker": "^5.0.13",
     "react-native-gesture-handler": "^2.30.0",
     "react-native-safe-area-context": "^5.5.2",
-    "react-native-screens": "^4.19.0"
+    "react-native-screens": "^4.19.0",
+    "react-native-sound": "^0.13.0"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
