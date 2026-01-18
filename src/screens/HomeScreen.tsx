@@ -6,15 +6,19 @@ import {
     StyleSheet,
     FlatList,
     TouchableOpacity,
-    SafeAreaView,
     StatusBar,
     Image,
+    Alert,
+    Platform,
+    PermissionsAndroid,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import notifee, { AuthorizationStatus } from '@notifee/react-native';
 import { Alarm, RootStackParamList } from '../types';
 import { getAlarms, deleteAlarm, saveAlarm } from '../services/StorageService';
-import { scheduleAlarm, cancelAlarm } from '../services/NotificationService';
+import { scheduleAlarm, cancelAlarm, initializeNotifications } from '../services/NotificationService';
 import { Card, Toggle } from '../components';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
@@ -32,6 +36,49 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const HomeScreen: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const [alarms, setAlarms] = useState<Alarm[]>([]);
+    const [permissionsChecked, setPermissionsChecked] = useState(false);
+
+    // Request permissions on first launch
+    useEffect(() => {
+        requestPermissions();
+    }, []);
+
+    const requestPermissions = async () => {
+        try {
+            // Request notification permission
+            const settings = await notifee.requestPermission();
+
+            if (settings.authorizationStatus === AuthorizationStatus.DENIED) {
+                Alert.alert(
+                    'Notifications Required',
+                    'RiseWell needs notification permissions to wake you up with alarms. Please enable notifications in Settings.',
+                    [
+                        { text: 'OK' }
+                    ]
+                );
+            }
+
+            // Request exact alarm permission (Android 12+)
+            if (Platform.OS === 'android') {
+                try {
+                    const alarmPermission = await notifee.getNotificationSettings();
+                    // AndroidNotificationSetting.ENABLED = 1, so check if alarm !== 1
+                    if (alarmPermission.android?.alarm && alarmPermission.android.alarm !== 1) {
+                        await notifee.openAlarmPermissionSettings();
+                    }
+                } catch (e) {
+                    // Older Android versions don't need this
+                }
+            }
+
+            // Initialize notification channels
+            await initializeNotifications();
+            setPermissionsChecked(true);
+        } catch (error) {
+            console.error('Permission request error:', error);
+            setPermissionsChecked(true);
+        }
+    };
 
     const loadAlarms = useCallback(async () => {
         const loadedAlarms = await getAlarms();
@@ -58,9 +105,22 @@ export const HomeScreen: React.FC = () => {
     };
 
     const handleDeleteAlarm = async (id: string) => {
-        await cancelAlarm(id);
-        await deleteAlarm(id);
-        loadAlarms();
+        Alert.alert(
+            'Delete Alarm',
+            'Are you sure you want to delete this alarm?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await cancelAlarm(id);
+                        await deleteAlarm(id);
+                        loadAlarms();
+                    },
+                },
+            ]
+        );
     };
 
     const getScheduleText = (alarm: Alarm) => {
@@ -113,10 +173,10 @@ export const HomeScreen: React.FC = () => {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
-            {/* Header */}
+            {/* Header - Now properly spaced from status bar */}
             <View style={styles.header}>
                 <Image
                     source={require('../../assets/RiseWell Logo.png')}
@@ -179,30 +239,34 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingTop: spacing.sm,
     },
     logo: {
-        width: 120,
-        height: 40,
+        width: 130,
+        height: 44,
     },
     headerButtons: {
         flexDirection: 'row',
-        gap: spacing.sm,
+        gap: spacing.md,
     },
     headerButton: {
-        padding: spacing.sm,
+        width: 48,
+        height: 48,
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
+        borderRadius: borderRadius.lg,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerButtonText: {
-        fontSize: 20,
+        fontSize: 24,
     },
     listContent: {
         padding: spacing.md,
-        gap: spacing.md,
+        paddingBottom: 100,
     },
     alarmCard: {
-        marginBottom: spacing.sm,
+        marginBottom: spacing.md,
     },
     alarmCardDisabled: {
         opacity: 0.6,
@@ -270,15 +334,15 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: spacing.xl,
         right: spacing.lg,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },
     fabText: {
-        fontSize: 32,
+        fontSize: 36,
         color: colors.black,
         fontWeight: typography.bold,
         marginTop: -2,
