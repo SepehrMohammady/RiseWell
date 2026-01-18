@@ -85,8 +85,9 @@ export const HeartRateScreen: React.FC = () => {
     };
 
     const handleComplete = () => {
+        // Call onComplete which will update state in AlarmRingScreen
+        // Don't navigate - AlarmRingScreen will handle next step
         onComplete();
-        navigation.goBack();
     };
 
     const renderInstruction = () => (

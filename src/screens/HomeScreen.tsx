@@ -10,12 +10,11 @@ import {
     Image,
     Alert,
     Platform,
-    PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import notifee, { AuthorizationStatus } from '@notifee/react-native';
+import notifee from '@notifee/react-native';
 import { Alarm, RootStackParamList } from '../types';
 import { getAlarms, deleteAlarm, saveAlarm } from '../services/StorageService';
 import { scheduleAlarm, cancelAlarm, initializeNotifications } from '../services/NotificationService';
@@ -36,7 +35,6 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const HomeScreen: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const [alarms, setAlarms] = useState<Alarm[]>([]);
-    const [permissionsChecked, setPermissionsChecked] = useState(false);
 
     // Request permissions on first launch
     useEffect(() => {
@@ -48,24 +46,18 @@ export const HomeScreen: React.FC = () => {
             // Request notification permission
             const settings = await notifee.requestPermission();
 
-            if (settings.authorizationStatus === AuthorizationStatus.DENIED) {
+            if (settings.authorizationStatus < 1) {
                 Alert.alert(
                     'Notifications Required',
                     'RiseWell needs notification permissions to wake you up with alarms. Please enable notifications in Settings.',
-                    [
-                        { text: 'OK' }
-                    ]
+                    [{ text: 'OK' }]
                 );
             }
 
             // Request exact alarm permission (Android 12+)
             if (Platform.OS === 'android') {
                 try {
-                    const alarmPermission = await notifee.getNotificationSettings();
-                    // AndroidNotificationSetting.ENABLED = 1, so check if alarm !== 1
-                    if (alarmPermission.android?.alarm && alarmPermission.android.alarm !== 1) {
-                        await notifee.openAlarmPermissionSettings();
-                    }
+                    await notifee.openAlarmPermissionSettings();
                 } catch (e) {
                     // Older Android versions don't need this
                 }
@@ -73,10 +65,8 @@ export const HomeScreen: React.FC = () => {
 
             // Initialize notification channels
             await initializeNotifications();
-            setPermissionsChecked(true);
         } catch (error) {
             console.error('Permission request error:', error);
-            setPermissionsChecked(true);
         }
     };
 
@@ -176,7 +166,7 @@ export const HomeScreen: React.FC = () => {
         <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
-            {/* Header - Now properly spaced from status bar */}
+            {/* Header - Logo is now larger and more visible */}
             <View style={styles.header}>
                 <Image
                     source={require('../../assets/RiseWell Logo.png')}
@@ -240,11 +230,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.md,
-        paddingTop: spacing.sm,
     },
     logo: {
-        width: 130,
-        height: 44,
+        width: 180,  // Much larger logo
+        height: 60,
     },
     headerButtons: {
         flexDirection: 'row',

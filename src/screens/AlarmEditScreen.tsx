@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     Alert,
     Modal,
-    Platform,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -23,10 +23,10 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AlarmEdit'>
 type RouteProps = RouteProp<RootStackParamList, 'AlarmEdit'>;
 
 const SCHEDULE_OPTIONS: { value: ScheduleType; label: string }[] = [
-    { value: 'workdays', label: 'Workdays (Mon-Fri)' },
-    { value: 'weekends', label: 'Weekends (Sat-Sun)' },
-    { value: 'daily', label: 'Every Day' },
-    { value: 'custom', label: 'Custom Days' },
+    { value: 'workdays', label: 'Workdays' },
+    { value: 'weekends', label: 'Weekends' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'custom', label: 'Custom' },
 ];
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -38,9 +38,6 @@ const DIFFICULTY_OPTIONS: { value: DifficultyLevel; label: string }[] = [
     { value: 3, label: 'Hard' },
     { value: 4, label: 'Expert' },
 ];
-
-const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-const MINUTES = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
 const createDefaultAlarm = (): Alarm => ({
     id: generateId(),
@@ -66,8 +63,9 @@ export const AlarmEditScreen: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedHour, setSelectedHour] = useState(7);
     const [selectedMinute, setSelectedMinute] = useState(0);
-    const [showTimePicker, setShowTimePicker] = useState(false);
     const [label, setLabel] = useState('');
+    const [showLabelModal, setShowLabelModal] = useState(false);
+    const [tempLabel, setTempLabel] = useState('');
 
     useEffect(() => {
         if (alarmId) {
@@ -129,98 +127,71 @@ export const AlarmEditScreen: React.FC = () => {
         setAlarm({ ...alarm, customDays: newDays });
     };
 
-    // Time picker wheel component
-    const TimePickerWheel = () => (
+    // Time adjustment functions
+    const incrementHour = () => setSelectedHour((h) => (h + 1) % 24);
+    const decrementHour = () => setSelectedHour((h) => (h - 1 + 24) % 24);
+    const incrementMinute = () => {
+        setSelectedMinute((m) => {
+            const newMin = (m + 1) % 60;
+            if (newMin === 0) incrementHour();
+            return newMin;
+        });
+    };
+    const decrementMinute = () => {
+        setSelectedMinute((m) => {
+            const newMin = (m - 1 + 60) % 60;
+            if (newMin === 59) decrementHour();
+            return newMin;
+        });
+    };
+    const incrementMinute5 = () => {
+        setSelectedMinute((m) => {
+            const newMin = (m + 5) % 60;
+            if (newMin < m) incrementHour();
+            return newMin;
+        });
+    };
+    const decrementMinute5 = () => {
+        setSelectedMinute((m) => {
+            const newMin = (m - 5 + 60) % 60;
+            if (newMin > m) decrementHour();
+            return newMin;
+        });
+    };
+
+    // Label Modal
+    const LabelModal = () => (
         <Modal
-            visible={showTimePicker}
+            visible={showLabelModal}
             transparent
             animationType="fade"
-            onRequestClose={() => setShowTimePicker(false)}
+            onRequestClose={() => setShowLabelModal(false)}
         >
             <View style={styles.modalOverlay}>
-                <View style={styles.timePickerModal}>
-                    <Text style={styles.timePickerTitle}>Set Time</Text>
-
-                    <View style={styles.wheelContainer}>
-                        {/* Hours wheel */}
-                        <View style={styles.wheelColumn}>
-                            <Text style={styles.wheelLabel}>Hour</Text>
-                            <ScrollView
-                                style={styles.wheel}
-                                showsVerticalScrollIndicator={false}
-                                snapToInterval={52}
-                                decelerationRate="fast"
-                            >
-                                <View style={{ height: 52 }} />
-                                {HOURS.map((hour, index) => (
-                                    <TouchableOpacity
-                                        key={hour}
-                                        style={[
-                                            styles.wheelItem,
-                                            selectedHour === index && styles.wheelItemSelected,
-                                        ]}
-                                        onPress={() => setSelectedHour(index)}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.wheelItemText,
-                                                selectedHour === index && styles.wheelItemTextSelected,
-                                            ]}
-                                        >
-                                            {hour}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                                <View style={{ height: 52 }} />
-                            </ScrollView>
-                        </View>
-
-                        <Text style={styles.wheelColon}>:</Text>
-
-                        {/* Minutes wheel */}
-                        <View style={styles.wheelColumn}>
-                            <Text style={styles.wheelLabel}>Minute</Text>
-                            <ScrollView
-                                style={styles.wheel}
-                                showsVerticalScrollIndicator={false}
-                                snapToInterval={52}
-                                decelerationRate="fast"
-                            >
-                                <View style={{ height: 52 }} />
-                                {MINUTES.map((minute, index) => (
-                                    <TouchableOpacity
-                                        key={minute}
-                                        style={[
-                                            styles.wheelItem,
-                                            selectedMinute === index && styles.wheelItemSelected,
-                                        ]}
-                                        onPress={() => setSelectedMinute(index)}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.wheelItemText,
-                                                selectedMinute === index && styles.wheelItemTextSelected,
-                                            ]}
-                                        >
-                                            {minute}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                                <View style={{ height: 52 }} />
-                            </ScrollView>
-                        </View>
-                    </View>
-
-                    <View style={styles.timePickerButtons}>
+                <View style={styles.labelModal}>
+                    <Text style={styles.modalTitle}>Alarm Label</Text>
+                    <TextInput
+                        style={styles.labelInput}
+                        placeholder="Enter alarm name..."
+                        placeholderTextColor={colors.textMuted}
+                        value={tempLabel}
+                        onChangeText={setTempLabel}
+                        autoFocus
+                        maxLength={50}
+                    />
+                    <View style={styles.modalButtons}>
                         <Button
                             title="Cancel"
-                            onPress={() => setShowTimePicker(false)}
+                            onPress={() => setShowLabelModal(false)}
                             variant="ghost"
                             size="medium"
                         />
                         <Button
-                            title="OK"
-                            onPress={() => setShowTimePicker(false)}
+                            title="Save"
+                            onPress={() => {
+                                setLabel(tempLabel);
+                                setShowLabelModal(false);
+                            }}
                             variant="primary"
                             size="medium"
                         />
@@ -233,34 +204,61 @@ export const AlarmEditScreen: React.FC = () => {
     return (
         <SafeAreaView style={styles.container} edges={['bottom']}>
             <ScrollView contentContainerStyle={styles.content}>
-                {/* Time Display - Tap to open picker */}
-                <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-                    <Card style={styles.timePickerCard}>
-                        <Text style={styles.timeDisplay}>
-                            {selectedHour.toString().padStart(2, '0')}
-                            <Text style={styles.timeColon}>:</Text>
-                            {selectedMinute.toString().padStart(2, '0')}
-                        </Text>
-                        <Text style={styles.tapToEdit}>Tap to change time</Text>
-                    </Card>
-                </TouchableOpacity>
+                {/* Time Picker with +/- buttons */}
+                <Card style={styles.timeCard}>
+                    <View style={styles.timePickerRow}>
+                        {/* Hours */}
+                        <View style={styles.timeColumn}>
+                            <TouchableOpacity style={styles.timeButton} onPress={incrementHour}>
+                                <Text style={styles.timeButtonText}>▲</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.timeValue}>
+                                {selectedHour.toString().padStart(2, '0')}
+                            </Text>
+                            <TouchableOpacity style={styles.timeButton} onPress={decrementHour}>
+                                <Text style={styles.timeButtonText}>▼</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                {/* Label */}
+                        <Text style={styles.timeColon}>:</Text>
+
+                        {/* Minutes */}
+                        <View style={styles.timeColumn}>
+                            <TouchableOpacity style={styles.timeButton} onPress={incrementMinute5}>
+                                <Text style={styles.timeButtonText}>▲</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.timeValue}>
+                                {selectedMinute.toString().padStart(2, '0')}
+                            </Text>
+                            <TouchableOpacity style={styles.timeButton} onPress={decrementMinute5}>
+                                <Text style={styles.timeButtonText}>▼</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Fine tune buttons */}
+                    <View style={styles.fineTuneRow}>
+                        <TouchableOpacity style={styles.fineTuneButton} onPress={decrementMinute}>
+                            <Text style={styles.fineTuneText}>-1 min</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.fineTuneButton} onPress={incrementMinute}>
+                            <Text style={styles.fineTuneText}>+1 min</Text>
+                        </TouchableOpacity>
+                    </View>
+                </Card>
+
+                {/* Label - Tap to edit with modal */}
                 <Card style={styles.section}>
                     <Text style={styles.sectionTitle}>Label</Text>
                     <TouchableOpacity
                         style={styles.labelButton}
                         onPress={() => {
-                            // For Android, we'll show a simple alert. In production, use a modal with TextInput.
-                            Alert.alert(
-                                'Alarm Label',
-                                'Feature: Use time picker to set alarm time. Label editing is simplified for this version.',
-                                [{ text: 'OK' }]
-                            );
+                            setTempLabel(label);
+                            setShowLabelModal(true);
                         }}
                     >
                         <Text style={label ? styles.labelValue : styles.labelPlaceholder}>
-                            {label || 'Add label (optional)'}
+                            {label || 'Tap to add label'}
                         </Text>
                     </TouchableOpacity>
                 </Card>
@@ -341,42 +339,6 @@ export const AlarmEditScreen: React.FC = () => {
                     </View>
                 </Card>
 
-                {/* Puzzle Settings */}
-                <Card style={styles.section}>
-                    <Text style={styles.sectionTitle}>Puzzle Mode</Text>
-                    <View style={styles.toggleRow}>
-                        <Text style={styles.toggleLabel}>Auto difficulty</Text>
-                        <Toggle
-                            value={alarm.puzzleMode === 'auto'}
-                            onValueChange={(v) => setAlarm({ ...alarm, puzzleMode: v ? 'auto' : 'manual' })}
-                        />
-                    </View>
-
-                    {alarm.puzzleMode === 'manual' && (
-                        <View style={styles.difficultyOptions}>
-                            {DIFFICULTY_OPTIONS.map((option) => (
-                                <TouchableOpacity
-                                    key={option.value}
-                                    style={[
-                                        styles.difficultyButton,
-                                        alarm.puzzleDifficulty === option.value && styles.difficultyButtonActive,
-                                    ]}
-                                    onPress={() => setAlarm({ ...alarm, puzzleDifficulty: option.value })}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.difficultyButtonText,
-                                            alarm.puzzleDifficulty === option.value && styles.difficultyButtonTextActive,
-                                        ]}
-                                    >
-                                        {option.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    )}
-                </Card>
-
                 {/* Optional Features */}
                 <Card style={styles.section}>
                     <Text style={styles.sectionTitle}>Optional Features</Text>
@@ -384,7 +346,7 @@ export const AlarmEditScreen: React.FC = () => {
                     <View style={styles.toggleRow}>
                         <View style={styles.toggleInfo}>
                             <Text style={styles.toggleLabel}>Heart Rate Check</Text>
-                            <Text style={styles.toggleSubtext}>Verify you're awake with camera</Text>
+                            <Text style={styles.toggleSubtext}>Verify you're awake</Text>
                         </View>
                         <Toggle
                             value={alarm.heartRateEnabled}
@@ -395,7 +357,7 @@ export const AlarmEditScreen: React.FC = () => {
                     <View style={[styles.toggleRow, { marginTop: spacing.md }]}>
                         <View style={styles.toggleInfo}>
                             <Text style={styles.toggleLabel}>Flash Memory Quiz</Text>
-                            <Text style={styles.toggleSubtext}>Answer a flash card to dismiss</Text>
+                            <Text style={styles.toggleSubtext}>Answer a flash card</Text>
                         </View>
                         <Toggle
                             value={alarm.flashMemoryEnabled}
@@ -426,7 +388,7 @@ export const AlarmEditScreen: React.FC = () => {
                 </View>
             </ScrollView>
 
-            <TimePickerWheel />
+            <LabelModal />
         </SafeAreaView>
     );
 };
@@ -440,23 +402,57 @@ const styles = StyleSheet.create({
         padding: spacing.md,
         paddingBottom: spacing.xxl,
     },
-    timePickerCard: {
+    timeCard: {
         alignItems: 'center',
-        paddingVertical: spacing.xl,
+        paddingVertical: spacing.lg,
     },
-    timeDisplay: {
+    timePickerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    timeColumn: {
+        alignItems: 'center',
+    },
+    timeButton: {
+        width: 80,
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.surfaceLight,
+        borderRadius: borderRadius.md,
+    },
+    timeButtonText: {
+        fontSize: 24,
+        color: colors.primary,
+    },
+    timeValue: {
         fontSize: 72,
         fontWeight: typography.bold,
         color: colors.textPrimary,
         fontVariant: ['tabular-nums'],
+        marginVertical: spacing.sm,
     },
     timeColon: {
+        fontSize: 72,
+        fontWeight: typography.bold,
         color: colors.primary,
+        marginHorizontal: spacing.md,
     },
-    tapToEdit: {
-        fontSize: typography.caption,
-        color: colors.textMuted,
-        marginTop: spacing.sm,
+    fineTuneRow: {
+        flexDirection: 'row',
+        gap: spacing.md,
+        marginTop: spacing.md,
+    },
+    fineTuneButton: {
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        backgroundColor: colors.surfaceLight,
+        borderRadius: borderRadius.md,
+    },
+    fineTuneText: {
+        fontSize: typography.body,
+        color: colors.textSecondary,
     },
     section: {
         marginTop: spacing.md,
@@ -565,29 +561,6 @@ const styles = StyleSheet.create({
         color: colors.textMuted,
         marginTop: 2,
     },
-    difficultyOptions: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-        marginTop: spacing.md,
-    },
-    difficultyButton: {
-        flex: 1,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        backgroundColor: colors.surfaceLight,
-        alignItems: 'center',
-    },
-    difficultyButtonActive: {
-        backgroundColor: colors.primary,
-    },
-    difficultyButtonText: {
-        fontSize: typography.caption,
-        color: colors.textSecondary,
-    },
-    difficultyButtonTextActive: {
-        color: colors.black,
-        fontWeight: typography.semibold,
-    },
     actions: {
         marginTop: spacing.xl,
     },
@@ -598,66 +571,31 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    timePickerModal: {
+    labelModal: {
         backgroundColor: colors.surface,
         borderRadius: borderRadius.xl,
         padding: spacing.lg,
         width: '85%',
         maxWidth: 340,
     },
-    timePickerTitle: {
+    modalTitle: {
         fontSize: typography.h3,
         fontWeight: typography.semibold,
         color: colors.textPrimary,
-        textAlign: 'center',
         marginBottom: spacing.lg,
     },
-    wheelContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    wheelColumn: {
-        alignItems: 'center',
-    },
-    wheelLabel: {
-        fontSize: typography.small,
-        color: colors.textMuted,
-        marginBottom: spacing.sm,
-    },
-    wheel: {
-        height: 156,
-        width: 80,
-    },
-    wheelItem: {
-        height: 52,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    wheelItemSelected: {
-        backgroundColor: colors.primary,
+    labelInput: {
+        backgroundColor: colors.surfaceLight,
         borderRadius: borderRadius.md,
+        padding: spacing.md,
+        fontSize: typography.body,
+        color: colors.textPrimary,
+        marginBottom: spacing.lg,
     },
-    wheelItemText: {
-        fontSize: 28,
-        color: colors.textSecondary,
-        fontVariant: ['tabular-nums'],
-    },
-    wheelItemTextSelected: {
-        color: colors.black,
-        fontWeight: typography.bold,
-    },
-    wheelColon: {
-        fontSize: 48,
-        color: colors.primary,
-        marginHorizontal: spacing.md,
-        fontWeight: typography.bold,
-    },
-    timePickerButtons: {
+    modalButtons: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
         gap: spacing.sm,
-        marginTop: spacing.lg,
     },
 });
 

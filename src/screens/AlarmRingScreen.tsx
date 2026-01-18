@@ -1,5 +1,5 @@
 // Alarm Ring Screen - Full Screen Active Alarm with Snooze/Dismiss
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Alarm, RootStackParamList, DifficultyLevel, AlarmState } from '../types';
+import { Alarm, RootStackParamList, DifficultyLevel } from '../types';
 import { getAlarmById, saveWakeRecord, generateId, getFlashCards } from '../services/StorageService';
 import { cancelActiveAlarm, scheduleSnooze, scheduleAlarm } from '../services/NotificationService';
 import { calculateWakefulnessScore } from '../services/ScoringService';
@@ -23,6 +23,8 @@ type RouteProps = RouteProp<RootStackParamList, 'AlarmRing'>;
 
 const VIBRATION_PATTERN = [500, 1000, 500, 1000];
 
+type DismissState = 'initial' | 'puzzle_done' | 'hr_done' | 'flash_done' | 'complete';
+
 export const AlarmRingScreen: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
@@ -32,9 +34,7 @@ export const AlarmRingScreen: React.FC = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [snoozeCount, setSnoozeCount] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [puzzleCompleted, setPuzzleCompleted] = useState(false);
-    const [heartRateCompleted, setHeartRateCompleted] = useState(false);
-    const [flashCardCompleted, setFlashCardCompleted] = useState(false);
+    const [dismissState, setDismissState] = useState<DismissState>('initial');
     const [flashCardCorrect, setFlashCardCorrect] = useState<boolean | null>(null);
 
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -43,7 +43,7 @@ export const AlarmRingScreen: React.FC = () => {
 
     // Prevent back button
     useFocusEffect(
-        React.useCallback(() => {
+        useCallback(() => {
             const onBackPress = () => true;
             const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
             return () => subscription.remove();
@@ -64,6 +64,17 @@ export const AlarmRingScreen: React.FC = () => {
             Vibration.cancel();
         };
     }, []);
+
+    // Handle state transitions after returning from other screens
+    useEffect(() => {
+        if (dismissState === 'puzzle_done' && alarm) {
+            handleAfterPuzzle();
+        } else if (dismissState === 'hr_done' && alarm) {
+            handleAfterHeartRate();
+        } else if (dismissState === 'flash_done' && alarm) {
+            completeDismiss();
+        }
+    }, [dismissState, alarm]);
 
     const loadAlarm = async () => {
         const loadedAlarm = await getAlarmById(alarmId);
@@ -98,7 +109,6 @@ export const AlarmRingScreen: React.FC = () => {
     };
 
     const getDifficultyForSnooze = (): DifficultyLevel => {
-        // Snooze puzzles are easier, but get harder with more snoozes
         if (snoozeCount === 0) return 1;
         if (snoozeCount === 1) return 1;
         if (snoozeCount === 2) return 2;
@@ -107,7 +117,6 @@ export const AlarmRingScreen: React.FC = () => {
 
     const getDifficultyForDismiss = (): DifficultyLevel => {
         if (!alarm) return 2;
-        // Dismiss is always harder
         const baseDifficulty = alarm.puzzleMode === 'auto' ? 2 : alarm.puzzleDifficulty;
         return Math.min(4, baseDifficulty + Math.floor(snoozeCount / 2)) as DifficultyLevel;
     };
@@ -122,12 +131,10 @@ export const AlarmRingScreen: React.FC = () => {
 
         const difficulty = getDifficultyForSnooze();
 
-        // Navigate to puzzle - on complete, schedule snooze
         navigation.navigate('Puzzle', {
             difficulty,
             puzzleType: 'pattern',
             onComplete: () => {
-                // Puzzle completed - now schedule snooze
                 completeSnooze();
             },
         });
@@ -137,18 +144,15 @@ export const AlarmRingScreen: React.FC = () => {
         if (!alarm) return;
 
         setSnoozeCount(prev => prev + 1);
-
-        // Schedule snooze notification
         await scheduleSnooze(alarm, alarm.snoozeDuration);
 
-        // Navigate back to home
         navigation.reset({
             index: 0,
             routes: [{ name: 'Home' }],
         });
     };
 
-    // Handle Dismiss - requires harder puzzle + optional HR + optional flash card
+    // Handle Dismiss - requires puzzle + optional HR + optional flash card
     const handleDismiss = () => {
         if (!alarm || isProcessing) return;
         setIsProcessing(true);
@@ -158,76 +162,71 @@ export const AlarmRingScreen: React.FC = () => {
 
         const difficulty = getDifficultyForDismiss();
 
-        // Navigate to puzzle first
         navigation.navigate('Puzzle', {
             difficulty,
             puzzleType: 'pattern',
             onComplete: () => {
-                // Puzzle completed
-                setPuzzleCompleted(true);
-                checkNextDismissStep(true, false, null);
+                setDismissState('puzzle_done');
             },
         });
     };
 
-    const checkNextDismissStep = async (
-        puzzleDone: boolean,
-        hrDone: boolean,
-        flashDone: boolean | null
-    ) => {
+    const handleAfterPuzzle = async () => {
         if (!alarm) return;
 
-        // Check if heart rate is needed and not done
-        if (alarm.heartRateEnabled && !hrDone) {
+        // Check if heart rate is needed
+        if (alarm.heartRateEnabled) {
             navigation.navigate('HeartRate', {
                 onComplete: () => {
-                    setHeartRateCompleted(true);
-                    checkNextDismissStep(true, true, flashDone);
+                    setDismissState('hr_done');
                 },
             });
-            return;
+        } else {
+            // Skip to flash card or complete
+            handleAfterHeartRate();
         }
+    };
 
-        // Check if flash card is needed and not done
-        if (alarm.flashMemoryEnabled && flashDone === null) {
+    const handleAfterHeartRate = async () => {
+        if (!alarm) return;
+
+        // Check if flash card is needed
+        if (alarm.flashMemoryEnabled) {
             const cards = await getFlashCards();
             if (cards.length > 0) {
                 navigation.navigate('FlashCardQuiz', {
                     onComplete: (correct: boolean) => {
-                        setFlashCardCompleted(true);
                         setFlashCardCorrect(correct);
-                        checkNextDismissStep(true, hrDone, correct);
+                        setDismissState('flash_done');
                     },
                 });
                 return;
             }
         }
 
-        // All steps completed - finalize dismiss
-        await completeDismiss(flashDone);
+        // No flash card needed or no cards available - complete immediately
+        setDismissState('complete');
+        completeDismiss();
     };
 
-    const completeDismiss = async (flashMemoryCorrect: boolean | null) => {
+    const completeDismiss = async () => {
         if (!alarm) return;
 
         const puzzleTimeMs = Date.now() - puzzleStartTime.current;
 
-        // Calculate wake time delta
         const [alarmHours, alarmMinutes] = alarm.time.split(':').map(Number);
         const alarmTime = new Date();
         alarmTime.setHours(alarmHours, alarmMinutes, 0, 0);
         const wakeTimeDelta = Math.round((Date.now() - alarmTime.getTime()) / 60000);
 
-        // Calculate score
         const score = calculateWakefulnessScore(
             puzzleTimeMs,
             puzzleErrors.current,
             snoozeCount,
             wakeTimeDelta,
-            flashMemoryCorrect
+            flashCardCorrect
         );
 
-        // Save wake record
         await saveWakeRecord({
             id: generateId(),
             alarmId: alarm.id,
@@ -236,17 +235,13 @@ export const AlarmRingScreen: React.FC = () => {
             snoozeCount,
             puzzleTimeMs,
             puzzleErrors: puzzleErrors.current,
-            flashMemoryCorrect,
+            flashMemoryCorrect: flashCardCorrect,
             wakeTimeDelta,
         });
 
-        // Cancel active notification
         await cancelActiveAlarm(alarm.id);
-
-        // Reschedule for next occurrence
         await scheduleAlarm(alarm);
 
-        // Navigate to home
         navigation.reset({
             index: 0,
             routes: [{ name: 'Home' }],
@@ -274,7 +269,6 @@ export const AlarmRingScreen: React.FC = () => {
         <View style={styles.container}>
             <StatusBar hidden />
 
-            {/* Background pulse effect */}
             <Animated.View
                 style={[
                     styles.pulseBackground,
@@ -283,25 +277,21 @@ export const AlarmRingScreen: React.FC = () => {
             />
 
             <View style={styles.content}>
-                {/* Current Time - Large display */}
                 <Animated.View style={[styles.timeContainer, { transform: [{ scale: pulseAnim }] }]}>
                     <Text style={styles.currentTime}>{formatTime(currentTime)}</Text>
                 </Animated.View>
 
-                {/* Alarm Info */}
                 <Text style={styles.alarmLabel}>{alarm.label || 'Wake Up!'}</Text>
-                <Text style={styles.alarmSchedule}>Scheduled for {alarm.time}</Text>
+                <Text style={styles.alarmSchedule}>Alarm: {alarm.time}</Text>
 
-                {/* Snooze Count */}
                 {snoozeCount > 0 && (
                     <View style={styles.snoozeBadge}>
                         <Text style={styles.snoozeBadgeText}>
-                            😴 Snoozed {snoozeCount} time{snoozeCount > 1 ? 's' : ''}
+                            😴 Snoozed {snoozeCount}x
                         </Text>
                     </View>
                 )}
 
-                {/* Features enabled */}
                 <View style={styles.featuresInfo}>
                     {alarm.heartRateEnabled && (
                         <Text style={styles.featureText}>❤️ Heart rate check required</Text>
@@ -311,7 +301,6 @@ export const AlarmRingScreen: React.FC = () => {
                     )}
                 </View>
 
-                {/* Action Buttons */}
                 <View style={styles.actions}>
                     <Button
                         title={`😴 Snooze (${alarm.snoozeDuration}min)`}
@@ -333,12 +322,8 @@ export const AlarmRingScreen: React.FC = () => {
                     />
                 </View>
 
-                {/* Hint */}
                 <Text style={styles.hintText}>
-                    Snooze: Solve easy puzzle{'\n'}
-                    Dismiss: Solve harder puzzle
-                    {alarm.heartRateEnabled ? ' + HR check' : ''}
-                    {alarm.flashMemoryEnabled ? ' + quiz' : ''}
+                    Both options require solving a puzzle
                 </Text>
             </View>
         </View>
@@ -370,6 +355,7 @@ const styles = StyleSheet.create({
         fontSize: typography.body,
         color: colors.textSecondary,
         textAlign: 'center',
+        marginTop: 100,
     },
     timeContainer: {
         marginBottom: spacing.xl,
@@ -424,7 +410,6 @@ const styles = StyleSheet.create({
         color: colors.textMuted,
         textAlign: 'center',
         marginTop: spacing.xl,
-        lineHeight: 22,
     },
 });
 
