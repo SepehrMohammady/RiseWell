@@ -1,97 +1,66 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# RiseWell
 
-# Getting Started
+<p align="center">
+  <img src="assets/RiseWell Logo.png" alt="RiseWell Logo" width="200"/>
+</p>
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+**RiseWell** is a smart, puzzle-based alarm app designed to help you wake up fully alert and mentally engaged. Unlike traditional alarms that let you snooze indefinitely, RiseWell ensures you're truly awake before silencing the alarm.
 
-## Step 1: Start Metro
+## 🌅 What is RiseWell?
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+RiseWell combines **cognitive challenges** with **adaptive difficulty** to create a wake-up experience that:
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **Activates your brain** - Solve puzzles before dismissing alarms
+- **Adapts to your behavior** - Difficulty increases with each snooze
+- **Reinforces learning** - Optional flash memory quizzes during wake-up
+- **Verifies alertness** - Heart rate monitoring to confirm you're awake
 
-```sh
-# Using npm
-npm start
+## ✨ Features
 
-# OR using Yarn
-yarn start
-```
+### 🧩 Puzzle-Based Dismissal
+Simple snooze buttons are history. To dismiss your alarm, you must solve a cognitive puzzle that scales in difficulty based on your snooze count.
 
-## Step 2: Build and run your app
+### 🎯 Auto-Adaptive Difficulty
+The more you snooze, the harder the puzzles become. This encourages actually waking up rather than hitting snooze repeatedly.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+### 🧠 Flash Memory Learning
+Add your own flash cards (vocabulary, facts, formulas) and answer one correctly to complete the wake-up process. Turn mornings into productive learning moments.
 
-### Android
+### ❤️ Heart Rate Verification
+Optional PPG-based heart rate monitoring ensures you're physically awake and alert before the alarm dismisses.
 
-```sh
-# Using npm
-npm run android
+### 📊 Wake Statistics
+Track your wake-up performance over time with detailed statistics including snooze counts, puzzle completion times, and wakefulness scores.
 
-# OR using Yarn
-yarn android
-```
+### 🔔 Custom Alarm Sounds
+Choose from 5 built-in alarm tones to find the perfect sound to start your day.
 
-### iOS
+## 📱 Platforms
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+- **Android** (Primary)
+- **iOS** (Planned)
+- **Windows** (Planned)
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## 🎨 Design Philosophy
 
-```sh
-bundle install
-```
+RiseWell follows a **minimalist flat design** with warm, sunrise-inspired colors:
 
-Then, and every time you update your native dependencies, run:
+- Dark background (#121212) for comfortable morning viewing
+- Warm amber accent (#FFB347) reflecting sunrise tones
+- Clean typography for easy reading when groggy
 
-```sh
-bundle exec pod install
-```
+## 🚀 Getting Started
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+1. Download and install RiseWell
+2. Create your first alarm with the + button
+3. Choose your schedule and difficulty settings
+4. Optional: Enable heart rate check and flash memory quiz
+5. Wake up to a smarter morning routine!
 
-```sh
-# Using npm
-npm run ios
+## 📖 License
 
-# OR using Yarn
-yarn ios
-```
+MIT License - See [LICENSE](LICENSE) for details.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+**RiseWell** - *Rise Well, Start Strong* 🌄

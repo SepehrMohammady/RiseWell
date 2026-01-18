@@ -412,6 +412,32 @@ export const AlarmEditScreen: React.FC = () => {
                     </View>
                 </Card>
 
+                {/* Alarm Sound */}
+                <Card style={styles.section}>
+                    <Text style={styles.sectionTitle}>Alarm Sound</Text>
+                    <View style={styles.soundOptions}>
+                        {['default', 'alarm1', 'alarm2', 'alarm3', 'alarm4', 'alarm5'].map((sound, index) => (
+                            <TouchableOpacity
+                                key={sound}
+                                style={[
+                                    styles.soundButton,
+                                    alarm.soundUri === sound && styles.soundButtonActive,
+                                ]}
+                                onPress={() => setAlarm({ ...alarm, soundUri: sound })}
+                            >
+                                <Text
+                                    style={[
+                                        styles.soundButtonText,
+                                        alarm.soundUri === sound && styles.soundButtonTextActive,
+                                    ]}
+                                >
+                                    {sound === 'default' ? '🔔 Default' : `🎵 Sound ${index}`}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </Card>
+
                 {/* Optional Features */}
                 <Card style={styles.section}>
                     <Text style={styles.sectionTitle}>Optional Features</Text>
@@ -668,6 +694,28 @@ const styles = StyleSheet.create({
     },
     actions: {
         marginTop: spacing.xl,
+    },
+    soundOptions: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    soundButton: {
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.surfaceLight,
+    },
+    soundButtonActive: {
+        backgroundColor: colors.primary,
+    },
+    soundButtonText: {
+        fontSize: typography.caption,
+        color: colors.textSecondary,
+    },
+    soundButtonTextActive: {
+        color: colors.black,
+        fontWeight: typography.semibold,
     },
     // Modal styles
     modalOverlay: {
