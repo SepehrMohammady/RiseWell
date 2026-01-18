@@ -103,15 +103,16 @@ export const HeartRateScreen: React.FC = () => {
                 </Animated.View>
 
                 <View style={styles.instructionSteps}>
-                    <Text style={styles.instructionText}>1. Find a well-lit area</Text>
-                    <Text style={styles.instructionText}>2. Place your finger on the back camera</Text>
-                    <Text style={styles.instructionText}>3. Cover the lens completely</Text>
-                    <Text style={styles.instructionText}>4. Hold still for 5 seconds</Text>
+                    <Text style={styles.demoNotice}>⚠️ DEMO MODE</Text>
+                    <Text style={styles.demoText}>
+                        Real PPG heart rate detection requires native camera integration.
+                        This version simulates the measurement to demonstrate the wake-up flow.
+                    </Text>
                 </View>
             </View>
 
             <Button
-                title="Start Measurement"
+                title="Start Demo Measurement"
                 onPress={handleStartMeasurement}
                 variant="primary"
                 size="large"
@@ -224,6 +225,19 @@ const styles = StyleSheet.create({
         fontSize: typography.body,
         color: colors.textPrimary,
         textAlign: 'center',
+    },
+    demoNotice: {
+        fontSize: typography.h3,
+        fontWeight: typography.bold,
+        color: colors.warning,
+        textAlign: 'center',
+        marginBottom: spacing.sm,
+    },
+    demoText: {
+        fontSize: typography.caption,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        lineHeight: 20,
     },
     measureContainer: {
         alignItems: 'center',

@@ -18,7 +18,7 @@ import { getFlashCards, saveFlashCard, deleteFlashCard, generateId } from '../se
 import { Button, Card } from '../components';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
-const MAX_CARDS = 3;
+const MAX_CARDS = 100;
 
 export const FlashCardsScreen: React.FC = () => {
     const [cards, setCards] = useState<FlashCard[]>([]);

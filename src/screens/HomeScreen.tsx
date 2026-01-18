@@ -9,7 +9,6 @@ import {
     StatusBar,
     Image,
     Alert,
-    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -175,15 +174,13 @@ export const HomeScreen: React.FC = () => {
         <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
-            {/* Header - Logo centered and larger */}
+            {/* Header - Logo centered and much larger */}
             <View style={styles.header}>
-                <View style={styles.logoContainer}>
-                    <Image
-                        source={require('../../assets/RiseWell Logo.png')}
-                        style={styles.logo}
-                        resizeMode="contain"
-                    />
-                </View>
+                <Image
+                    source={require('../../assets/RiseWell Logo.png')}
+                    style={styles.logo}
+                    resizeMode="contain"
+                />
                 <View style={styles.headerButtons}>
                     <TouchableOpacity
                         onPress={() => navigation.navigate('FlashCards')}
@@ -245,14 +242,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
-    },
-    logoContainer: {
-        flex: 1,
+        paddingVertical: spacing.sm,
     },
     logo: {
-        width: 160,
-        height: 55,
+        width: 140,
+        height: 70,
     },
     headerButtons: {
         flexDirection: 'row',
@@ -329,7 +323,7 @@ const styles = StyleSheet.create({
     },
     emptyLogo: {
         width: 200,
-        height: 100,
+        height: 120,
         marginBottom: spacing.lg,
     },
     emptyStateText: {
