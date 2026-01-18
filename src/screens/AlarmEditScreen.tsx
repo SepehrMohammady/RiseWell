@@ -1,5 +1,5 @@
 // Alarm Edit Screen - Create/Edit Alarm
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -9,6 +9,7 @@ import {
     Alert,
     Modal,
     TextInput,
+    Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -47,7 +48,7 @@ const createDefaultAlarm = (): Alarm => ({
     customDays: [],
     soundUri: 'default',
     snoozeDuration: 10,
-    puzzleMode: 'auto',
+    puzzleMode: 'manual',
     puzzleDifficulty: 2,
     heartRateEnabled: false,
     flashMemoryEnabled: false,
@@ -67,12 +68,24 @@ export const AlarmEditScreen: React.FC = () => {
     const [showLabelModal, setShowLabelModal] = useState(false);
     const [tempLabel, setTempLabel] = useState('');
 
+    // Long press timer refs
+    const hourIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const minuteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
     useEffect(() => {
         if (alarmId) {
             setIsEditing(true);
             loadAlarm(alarmId);
         }
     }, [alarmId]);
+
+    // Cleanup intervals on unmount
+    useEffect(() => {
+        return () => {
+            if (hourIntervalRef.current) clearInterval(hourIntervalRef.current);
+            if (minuteIntervalRef.current) clearInterval(minuteIntervalRef.current);
+        };
+    }, []);
 
     const loadAlarm = async (id: string) => {
         const loadedAlarm = await getAlarmById(id);
@@ -130,33 +143,38 @@ export const AlarmEditScreen: React.FC = () => {
     // Time adjustment functions
     const incrementHour = () => setSelectedHour((h) => (h + 1) % 24);
     const decrementHour = () => setSelectedHour((h) => (h - 1 + 24) % 24);
-    const incrementMinute = () => {
-        setSelectedMinute((m) => {
-            const newMin = (m + 1) % 60;
-            if (newMin === 0) incrementHour();
-            return newMin;
-        });
+    const incrementMinute = () => setSelectedMinute((m) => (m + 1) % 60);
+    const decrementMinute = () => setSelectedMinute((m) => (m - 1 + 60) % 60);
+
+    // Long press handlers for continuous increment/decrement
+    const startHourIncrement = () => {
+        incrementHour();
+        hourIntervalRef.current = setInterval(incrementHour, 150);
     };
-    const decrementMinute = () => {
-        setSelectedMinute((m) => {
-            const newMin = (m - 1 + 60) % 60;
-            if (newMin === 59) decrementHour();
-            return newMin;
-        });
+    const startHourDecrement = () => {
+        decrementHour();
+        hourIntervalRef.current = setInterval(decrementHour, 150);
     };
-    const incrementMinute5 = () => {
-        setSelectedMinute((m) => {
-            const newMin = (m + 5) % 60;
-            if (newMin < m) incrementHour();
-            return newMin;
-        });
+    const stopHourChange = () => {
+        if (hourIntervalRef.current) {
+            clearInterval(hourIntervalRef.current);
+            hourIntervalRef.current = null;
+        }
     };
-    const decrementMinute5 = () => {
-        setSelectedMinute((m) => {
-            const newMin = (m - 5 + 60) % 60;
-            if (newMin > m) decrementHour();
-            return newMin;
-        });
+
+    const startMinuteIncrement = () => {
+        incrementMinute();
+        minuteIntervalRef.current = setInterval(incrementMinute, 100);
+    };
+    const startMinuteDecrement = () => {
+        decrementMinute();
+        minuteIntervalRef.current = setInterval(decrementMinute, 100);
+    };
+    const stopMinuteChange = () => {
+        if (minuteIntervalRef.current) {
+            clearInterval(minuteIntervalRef.current);
+            minuteIntervalRef.current = null;
+        }
     };
 
     // Label Modal
@@ -204,47 +222,62 @@ export const AlarmEditScreen: React.FC = () => {
     return (
         <SafeAreaView style={styles.container} edges={['bottom']}>
             <ScrollView contentContainerStyle={styles.content}>
-                {/* Time Picker with +/- buttons */}
+                {/* Time Picker with long-press support */}
                 <Card style={styles.timeCard}>
                     <View style={styles.timePickerRow}>
                         {/* Hours */}
                         <View style={styles.timeColumn}>
-                            <TouchableOpacity style={styles.timeButton} onPress={incrementHour}>
+                            <Pressable
+                                style={styles.timeButton}
+                                onPress={incrementHour}
+                                onPressIn={startHourIncrement}
+                                onPressOut={stopHourChange}
+                                delayLongPress={300}
+                            >
                                 <Text style={styles.timeButtonText}>▲</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                             <Text style={styles.timeValue}>
                                 {selectedHour.toString().padStart(2, '0')}
                             </Text>
-                            <TouchableOpacity style={styles.timeButton} onPress={decrementHour}>
+                            <Pressable
+                                style={styles.timeButton}
+                                onPress={decrementHour}
+                                onPressIn={startHourDecrement}
+                                onPressOut={stopHourChange}
+                                delayLongPress={300}
+                            >
                                 <Text style={styles.timeButtonText}>▼</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         <Text style={styles.timeColon}>:</Text>
 
                         {/* Minutes */}
                         <View style={styles.timeColumn}>
-                            <TouchableOpacity style={styles.timeButton} onPress={incrementMinute5}>
+                            <Pressable
+                                style={styles.timeButton}
+                                onPress={incrementMinute}
+                                onPressIn={startMinuteIncrement}
+                                onPressOut={stopMinuteChange}
+                                delayLongPress={300}
+                            >
                                 <Text style={styles.timeButtonText}>▲</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                             <Text style={styles.timeValue}>
                                 {selectedMinute.toString().padStart(2, '0')}
                             </Text>
-                            <TouchableOpacity style={styles.timeButton} onPress={decrementMinute5}>
+                            <Pressable
+                                style={styles.timeButton}
+                                onPress={decrementMinute}
+                                onPressIn={startMinuteDecrement}
+                                onPressOut={stopMinuteChange}
+                                delayLongPress={300}
+                            >
                                 <Text style={styles.timeButtonText}>▼</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
-
-                    {/* Fine tune buttons */}
-                    <View style={styles.fineTuneRow}>
-                        <TouchableOpacity style={styles.fineTuneButton} onPress={decrementMinute}>
-                            <Text style={styles.fineTuneText}>-1 min</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.fineTuneButton} onPress={incrementMinute}>
-                            <Text style={styles.fineTuneText}>+1 min</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={styles.timeHint}>Hold arrows for fast scroll</Text>
                 </Card>
 
                 {/* Label - Tap to edit with modal */}
@@ -311,6 +344,32 @@ export const AlarmEditScreen: React.FC = () => {
                             ))}
                         </View>
                     )}
+                </Card>
+
+                {/* Difficulty Setting */}
+                <Card style={styles.section}>
+                    <Text style={styles.sectionTitle}>Puzzle Difficulty</Text>
+                    <View style={styles.difficultyOptions}>
+                        {DIFFICULTY_OPTIONS.map((option) => (
+                            <TouchableOpacity
+                                key={option.value}
+                                style={[
+                                    styles.difficultyButton,
+                                    alarm.puzzleDifficulty === option.value && styles.difficultyButtonActive,
+                                ]}
+                                onPress={() => setAlarm({ ...alarm, puzzleDifficulty: option.value })}
+                            >
+                                <Text
+                                    style={[
+                                        styles.difficultyButtonText,
+                                        alarm.puzzleDifficulty === option.value && styles.difficultyButtonTextActive,
+                                    ]}
+                                >
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </Card>
 
                 {/* Snooze Duration */}
@@ -439,20 +498,10 @@ const styles = StyleSheet.create({
         color: colors.primary,
         marginHorizontal: spacing.md,
     },
-    fineTuneRow: {
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginTop: spacing.md,
-    },
-    fineTuneButton: {
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.lg,
-        backgroundColor: colors.surfaceLight,
-        borderRadius: borderRadius.md,
-    },
-    fineTuneText: {
-        fontSize: typography.body,
-        color: colors.textSecondary,
+    timeHint: {
+        fontSize: typography.small,
+        color: colors.textMuted,
+        marginTop: spacing.sm,
     },
     section: {
         marginTop: spacing.md,
@@ -519,6 +568,28 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
     },
     dayButtonTextActive: {
+        color: colors.black,
+        fontWeight: typography.semibold,
+    },
+    difficultyOptions: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    difficultyButton: {
+        flex: 1,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.surfaceLight,
+        alignItems: 'center',
+    },
+    difficultyButtonActive: {
+        backgroundColor: colors.primary,
+    },
+    difficultyButtonText: {
+        fontSize: typography.caption,
+        color: colors.textSecondary,
+    },
+    difficultyButtonTextActive: {
         color: colors.black,
         fontWeight: typography.semibold,
     },

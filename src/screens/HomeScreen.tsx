@@ -1,5 +1,5 @@
 // Home Screen - Alarm List
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import notifee from '@notifee/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alarm, RootStackParamList } from '../types';
 import { getAlarms, deleteAlarm, saveAlarm } from '../services/StorageService';
 import { scheduleAlarm, cancelAlarm, initializeNotifications } from '../services/NotificationService';
@@ -31,19 +32,33 @@ const SCHEDULE_LABELS: Record<string, string> = {
 };
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const PERMISSIONS_REQUESTED_KEY = '@risewell_permissions_requested';
 
 export const HomeScreen: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const [alarms, setAlarms] = useState<Alarm[]>([]);
+    const permissionsChecked = useRef(false);
 
-    // Request permissions on first launch
+    // Request permissions only once on first launch
     useEffect(() => {
-        requestPermissions();
+        if (!permissionsChecked.current) {
+            permissionsChecked.current = true;
+            requestPermissionsOnce();
+        }
     }, []);
 
-    const requestPermissions = async () => {
+    const requestPermissionsOnce = async () => {
         try {
-            // Request notification permission
+            // Check if we already requested permissions
+            const alreadyRequested = await AsyncStorage.getItem(PERMISSIONS_REQUESTED_KEY);
+
+            if (alreadyRequested === 'true') {
+                // Already requested - just initialize channels
+                await initializeNotifications();
+                return;
+            }
+
+            // First time - request notification permission
             const settings = await notifee.requestPermission();
 
             if (settings.authorizationStatus < 1) {
@@ -54,14 +69,8 @@ export const HomeScreen: React.FC = () => {
                 );
             }
 
-            // Request exact alarm permission (Android 12+)
-            if (Platform.OS === 'android') {
-                try {
-                    await notifee.openAlarmPermissionSettings();
-                } catch (e) {
-                    // Older Android versions don't need this
-                }
-            }
+            // Mark as requested so we don't ask again
+            await AsyncStorage.setItem(PERMISSIONS_REQUESTED_KEY, 'true');
 
             // Initialize notification channels
             await initializeNotifications();
@@ -166,13 +175,15 @@ export const HomeScreen: React.FC = () => {
         <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
-            {/* Header - Logo is now larger and more visible */}
+            {/* Header - Logo centered and larger */}
             <View style={styles.header}>
-                <Image
-                    source={require('../../assets/RiseWell Logo.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                />
+                <View style={styles.logoContainer}>
+                    <Image
+                        source={require('../../assets/RiseWell Logo.png')}
+                        style={styles.logo}
+                        resizeMode="contain"
+                    />
+                </View>
                 <View style={styles.headerButtons}>
                     <TouchableOpacity
                         onPress={() => navigation.navigate('FlashCards')}
@@ -192,6 +203,11 @@ export const HomeScreen: React.FC = () => {
             {/* Alarm List */}
             {alarms.length === 0 ? (
                 <View style={styles.emptyState}>
+                    <Image
+                        source={require('../../assets/RiseWell Logo.png')}
+                        style={styles.emptyLogo}
+                        resizeMode="contain"
+                    />
                     <Text style={styles.emptyStateText}>No alarms yet</Text>
                     <Text style={styles.emptyStateSubtext}>
                         Tap + to create your first alarm
@@ -231,24 +247,27 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.md,
     },
+    logoContainer: {
+        flex: 1,
+    },
     logo: {
-        width: 180,  // Much larger logo
-        height: 60,
+        width: 160,
+        height: 55,
     },
     headerButtons: {
         flexDirection: 'row',
-        gap: spacing.md,
+        gap: spacing.sm,
     },
     headerButton: {
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         backgroundColor: colors.surface,
         borderRadius: borderRadius.lg,
         justifyContent: 'center',
         alignItems: 'center',
     },
     headerButtonText: {
-        fontSize: 24,
+        fontSize: 22,
     },
     listContent: {
         padding: spacing.md,
@@ -307,6 +326,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: spacing.xl,
+    },
+    emptyLogo: {
+        width: 200,
+        height: 100,
+        marginBottom: spacing.lg,
     },
     emptyStateText: {
         fontSize: typography.h2,
