@@ -276,20 +276,17 @@ export const AlarmEditScreen: React.FC = () => {
                     <Text style={styles.timeHint}>Tap: ±1 step | Hold: fast scroll</Text>
                 </Card>
 
-                {/* Label - Tap to edit with modal */}
+                {/* Label - Direct TextInput */}
                 <Card style={styles.section}>
                     <Text style={styles.sectionTitle}>Label</Text>
-                    <TouchableOpacity
-                        style={styles.labelButton}
-                        onPress={() => {
-                            setTempLabel(label);
-                            setShowLabelModal(true);
-                        }}
-                    >
-                        <Text style={label ? styles.labelValue : styles.labelPlaceholder}>
-                            {label || 'Tap to add label'}
-                        </Text>
-                    </TouchableOpacity>
+                    <TextInput
+                        style={styles.labelInput}
+                        placeholder="Enter alarm label..."
+                        placeholderTextColor={colors.textMuted}
+                        value={label}
+                        onChangeText={setLabel}
+                        maxLength={50}
+                    />
                 </Card>
 
                 {/* Schedule */}

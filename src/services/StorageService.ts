@@ -72,9 +72,9 @@ export async function saveFlashCard(card: FlashCard): Promise<void> {
     if (index >= 0) {
         cards[index] = card;
     } else {
-        // Limit to 3 cards
-        if (cards.length >= 3) {
-            throw new Error('Maximum of 3 flash cards allowed');
+        // Allow up to 100 cards
+        if (cards.length >= 100) {
+            throw new Error('Maximum of 100 flash cards allowed');
         }
         cards.push(card);
     }

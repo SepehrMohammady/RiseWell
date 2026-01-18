@@ -48,9 +48,9 @@ export interface AlarmState {
 export type RootStackParamList = {
   Home: undefined;
   AlarmEdit: { alarmId?: string };
-  AlarmRing: { alarmId: string };
-  Puzzle: { 
-    difficulty: DifficultyLevel; 
+  AlarmRing: { alarmId: string; action?: 'dismiss' | 'snooze' };
+  Puzzle: {
+    difficulty: DifficultyLevel;
     puzzleType: PuzzleType;
     onComplete: () => void;
   };

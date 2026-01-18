@@ -96,9 +96,9 @@ function App(): React.JSX.Element {
               navigationRef.current.navigate('AlarmRing', { alarmId });
             }
           } else if (detail.pressAction?.id === 'dismiss') {
-            // Open alarm ring screen to handle dismiss
+            // Dismiss the alarm - cancel notification and open puzzle screen
             if (navigationRef.current) {
-              navigationRef.current.navigate('AlarmRing', { alarmId });
+              navigationRef.current.navigate('AlarmRing', { alarmId, action: 'dismiss' });
             }
           }
           break;
