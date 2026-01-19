@@ -1,6 +1,6 @@
 // RiseWell - Main App Entry Point
 import React, { useEffect, useRef } from 'react';
-import { StatusBar, LogBox, AppState, Platform, Linking, Alert } from 'react-native';
+import { StatusBar, LogBox, AppState, AppStateStatus, Linking } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
@@ -17,7 +17,7 @@ import {
   FlashCardQuizScreen,
   StatisticsScreen,
 } from './src/screens';
-import { initializeNotifications } from './src/services/NotificationService';
+import { initializeNotifications, cancelActiveAlarm } from './src/services/NotificationService';
 import { colors, typography } from './src/theme';
 
 // Ignore specific warnings in development
@@ -41,16 +41,48 @@ const screenOptions = {
   headerShadowVisible: false,
 };
 
+// Background event handler - MUST be registered outside component
+notifee.onBackgroundEvent(async ({ type, detail }) => {
+  console.log('Background event:', type, detail);
+
+  const { alarmId } = (detail.notification?.data || {}) as {
+    alarmId?: string;
+  };
+
+  if (!alarmId) return;
+
+  // Handle action button presses in background
+  if (type === EventType.ACTION_PRESS) {
+    if (detail.pressAction?.id === 'dismiss' || detail.pressAction?.id === 'snooze') {
+      // Cancel the notification - app will open and handle the action
+      await notifee.cancelNotification(detail.notification?.id || '');
+    }
+  }
+});
+
 function App(): React.JSX.Element {
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
-  const appState = useRef(AppState.currentState);
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+  const pendingAlarmId = useRef<string | null>(null);
+  const pendingAction = useRef<'dismiss' | 'snooze' | null>(null);
 
   useEffect(() => {
     // Initialize notification channels on app start
     initializeNotifications();
 
+    // Check for initial notification (app opened from notification)
+    checkInitialNotification();
+
     // Handle app state changes (background to foreground)
     const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        // App came to foreground - check for pending alarm
+        if (pendingAlarmId.current) {
+          navigateToAlarm(pendingAlarmId.current, pendingAction.current);
+          pendingAlarmId.current = null;
+          pendingAction.current = null;
+        }
+      }
       appState.current = nextAppState;
     });
 
@@ -58,6 +90,26 @@ function App(): React.JSX.Element {
       subscription.remove();
     };
   }, []);
+
+  const checkInitialNotification = async () => {
+    const initialNotification = await notifee.getInitialNotification();
+    if (initialNotification) {
+      const { alarmId } = (initialNotification.notification.data || {}) as { alarmId?: string };
+      if (alarmId) {
+        const action = initialNotification.pressAction?.id as 'dismiss' | 'snooze' | undefined;
+        // Wait for navigation to be ready
+        setTimeout(() => {
+          navigateToAlarm(alarmId, action || null);
+        }, 500);
+      }
+    }
+  };
+
+  const navigateToAlarm = (alarmId: string, action: 'dismiss' | 'snooze' | null) => {
+    if (navigationRef.current) {
+      navigationRef.current.navigate('AlarmRing', { alarmId, action: action || undefined });
+    }
+  };
 
   // Handle foreground notification events
   useEffect(() => {
@@ -73,33 +125,23 @@ function App(): React.JSX.Element {
 
       switch (type) {
         case EventType.DELIVERED:
-          // Alarm notification was delivered - open the alarm ring screen
+          // Alarm notification was delivered - open the alarm ring screen immediately
           if (notificationType === 'alarm' || notificationType === 'snooze') {
-            if (navigationRef.current) {
-              navigationRef.current.navigate('AlarmRing', { alarmId });
-            }
+            navigateToAlarm(alarmId, null);
           }
           break;
         case EventType.PRESS:
           // User pressed on the notification
           if (notificationType === 'alarm' || notificationType === 'snooze') {
-            if (navigationRef.current) {
-              navigationRef.current.navigate('AlarmRing', { alarmId });
-            }
+            navigateToAlarm(alarmId, null);
           }
           break;
         case EventType.ACTION_PRESS:
           // User pressed an action button
           if (detail.pressAction?.id === 'snooze') {
-            // Open alarm ring screen to handle snooze
-            if (navigationRef.current) {
-              navigationRef.current.navigate('AlarmRing', { alarmId });
-            }
+            navigateToAlarm(alarmId, 'snooze');
           } else if (detail.pressAction?.id === 'dismiss') {
-            // Dismiss the alarm - cancel notification and open puzzle screen
-            if (navigationRef.current) {
-              navigationRef.current.navigate('AlarmRing', { alarmId, action: 'dismiss' });
-            }
+            navigateToAlarm(alarmId, 'dismiss');
           }
           break;
       }
@@ -108,26 +150,6 @@ function App(): React.JSX.Element {
     return () => {
       unsubscribe();
     };
-  }, []);
-
-  // Handle background notification events (must be outside component or use notifee.onBackgroundEvent)
-  useEffect(() => {
-    // Register background event handler
-    notifee.onBackgroundEvent(async ({ type, detail }) => {
-      console.log('Background event:', type, detail);
-
-      const { alarmId, type: notificationType } = (detail.notification?.data || {}) as {
-        alarmId?: string;
-        type?: string;
-      };
-
-      if (!alarmId) return;
-
-      if (type === EventType.PRESS || type === EventType.DELIVERED) {
-        // This will be handled when app opens
-        // The notification data will be available to the app
-      }
-    });
   }, []);
 
   return (

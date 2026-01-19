@@ -15,6 +15,7 @@ import { Alarm, RootStackParamList, DifficultyLevel } from '../types';
 import { getAlarmById, saveWakeRecord, generateId, getFlashCards } from '../services/StorageService';
 import { cancelActiveAlarm, scheduleSnooze, scheduleAlarm } from '../services/NotificationService';
 import { calculateWakefulnessScore } from '../services/ScoringService';
+import { playSound, stopSound } from '../services/AudioService';
 import { Button } from '../components';
 import { colors, spacing, typography } from '../theme';
 
@@ -28,7 +29,7 @@ type DismissState = 'initial' | 'puzzle_done' | 'hr_done' | 'flash_done' | 'comp
 export const AlarmRingScreen: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
-    const { alarmId } = route.params;
+    const { alarmId, action } = route.params;
 
     const [alarm, setAlarm] = useState<Alarm | null>(null);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -40,6 +41,7 @@ export const AlarmRingScreen: React.FC = () => {
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const puzzleStartTime = useRef<number>(Date.now());
     const puzzleErrors = useRef<number>(0);
+    const audioStarted = useRef(false);
 
     // Prevent back button
     useFocusEffect(
@@ -62,8 +64,31 @@ export const AlarmRingScreen: React.FC = () => {
         return () => {
             clearInterval(interval);
             Vibration.cancel();
+            stopSound();
         };
     }, []);
+
+    // Start audio when alarm is loaded
+    useEffect(() => {
+        if (alarm && !audioStarted.current) {
+            audioStarted.current = true;
+            // Play the selected alarm sound on loop
+            playSound(alarm.soundUri, true).catch(err => {
+                console.log('Audio playback error:', err);
+            });
+        }
+    }, [alarm]);
+
+    // Handle immediate action from notification
+    useEffect(() => {
+        if (alarm && action && !isProcessing) {
+            if (action === 'snooze') {
+                handleSnooze();
+            } else if (action === 'dismiss') {
+                handleDismiss();
+            }
+        }
+    }, [alarm, action]);
 
     // Handle state transitions after returning from other screens
     useEffect(() => {
@@ -87,8 +112,9 @@ export const AlarmRingScreen: React.FC = () => {
         Vibration.vibrate(VIBRATION_PATTERN, true);
     };
 
-    const stopVibration = () => {
+    const stopAlarmFeedback = () => {
         Vibration.cancel();
+        stopSound();
     };
 
     const startPulseAnimation = () => {
@@ -125,7 +151,7 @@ export const AlarmRingScreen: React.FC = () => {
     const handleSnooze = () => {
         if (!alarm || isProcessing) return;
         setIsProcessing(true);
-        stopVibration();
+        stopAlarmFeedback();
         puzzleStartTime.current = Date.now();
         puzzleErrors.current = 0;
 
@@ -145,6 +171,7 @@ export const AlarmRingScreen: React.FC = () => {
 
         setSnoozeCount(prev => prev + 1);
         await scheduleSnooze(alarm, alarm.snoozeDuration);
+        await cancelActiveAlarm(alarm.id);
 
         navigation.reset({
             index: 0,
@@ -156,7 +183,7 @@ export const AlarmRingScreen: React.FC = () => {
     const handleDismiss = () => {
         if (!alarm || isProcessing) return;
         setIsProcessing(true);
-        stopVibration();
+        stopAlarmFeedback();
         puzzleStartTime.current = Date.now();
         puzzleErrors.current = 0;
 

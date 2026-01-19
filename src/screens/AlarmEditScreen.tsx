@@ -410,68 +410,91 @@ export const AlarmEditScreen: React.FC = () => {
                     </View>
                 </Card>
 
-                {/* Alarm Sound */}
+                {/* Alarm Sound - Vertical List */}
                 <Card style={styles.section}>
                     <Text style={styles.sectionTitle}>Alarm Sound</Text>
-                    <View style={styles.soundOptions}>
-                        {['default', 'alarm1', 'alarm2', 'alarm3', 'alarm4', 'alarm5'].map((sound) => (
-                            <View key={sound} style={styles.soundRow}>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.soundButton,
-                                        alarm.soundUri === sound && styles.soundButtonActive,
-                                    ]}
-                                    onPress={() => setAlarm({ ...alarm, soundUri: sound })}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.soundButtonText,
-                                            alarm.soundUri === sound && styles.soundButtonTextActive,
-                                        ]}
-                                    >
-                                        {getSoundDisplayName(sound)}
-                                    </Text>
-                                </TouchableOpacity>
-                                {sound !== 'default' && (
-                                    <TouchableOpacity
-                                        style={styles.previewButton}
-                                        onPress={() => playPreview(sound)}
-                                    >
-                                        <Text style={styles.previewButtonText}>▶️</Text>
-                                    </TouchableOpacity>
-                                )}
+                    {['default', 'alarm1', 'alarm2', 'alarm3', 'alarm4', 'alarm5'].map((sound) => (
+                        <TouchableOpacity
+                            key={sound}
+                            style={[
+                                styles.soundListItem,
+                                alarm.soundUri === sound && styles.soundListItemActive,
+                            ]}
+                            onPress={() => setAlarm({ ...alarm, soundUri: sound })}
+                        >
+                            <View style={styles.soundListInfo}>
+                                <View style={[
+                                    styles.radioCircle,
+                                    alarm.soundUri === sound && styles.radioCircleActive,
+                                ]}>
+                                    {alarm.soundUri === sound && <View style={styles.radioInner} />}
+                                </View>
+                                <Text style={[
+                                    styles.soundListText,
+                                    alarm.soundUri === sound && styles.soundListTextActive,
+                                ]}>
+                                    {getSoundDisplayName(sound)}
+                                </Text>
                             </View>
-                        ))}
-                    </View>
-                    <TouchableOpacity style={styles.stopButton} onPress={stopSound}>
-                        <Text style={styles.stopButtonText}>⏹ Stop Preview</Text>
+                            {sound !== 'default' && (
+                                <TouchableOpacity
+                                    style={styles.previewIconButton}
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        playPreview(sound);
+                                    }}
+                                >
+                                    <Text style={styles.previewIcon}>▶️</Text>
+                                </TouchableOpacity>
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity style={styles.stopPreviewButton} onPress={stopSound}>
+                        <Text style={styles.stopPreviewText}>⏹ Stop Preview</Text>
                     </TouchableOpacity>
                 </Card>
 
-                {/* Optional Features */}
+                {/* Wake-Up Challenges */}
                 <Card style={styles.section}>
-                    <Text style={styles.sectionTitle}>Optional Features</Text>
+                    <Text style={styles.sectionTitle}>Wake-Up Challenges</Text>
+                    <Text style={styles.sectionSubtitle}>Select one or more challenges to complete</Text>
 
-                    <View style={styles.toggleRow}>
-                        <View style={styles.toggleInfo}>
-                            <Text style={styles.toggleLabel}>Heart Rate Check</Text>
-                            <Text style={styles.toggleSubtext}>Verify you're awake</Text>
+                    <TouchableOpacity
+                        style={styles.challengeItem}
+                        onPress={() => setAlarm({ ...alarm, heartRateEnabled: !alarm.heartRateEnabled })}
+                    >
+                        <View style={[
+                            styles.checkbox,
+                            alarm.heartRateEnabled && styles.checkboxActive,
+                        ]}>
+                            {alarm.heartRateEnabled && <Text style={styles.checkmark}>✓</Text>}
                         </View>
-                        <Toggle
-                            value={alarm.heartRateEnabled}
-                            onValueChange={(v) => setAlarm({ ...alarm, heartRateEnabled: v })}
-                        />
-                    </View>
+                        <View style={styles.challengeInfo}>
+                            <Text style={styles.challengeTitle}>❤️ Heart Rate Check</Text>
+                            <Text style={styles.challengeDesc}>Measure your pulse to verify alertness</Text>
+                        </View>
+                    </TouchableOpacity>
 
-                    <View style={[styles.toggleRow, { marginTop: spacing.md }]}>
-                        <View style={styles.toggleInfo}>
-                            <Text style={styles.toggleLabel}>Flash Memory Quiz</Text>
-                            <Text style={styles.toggleSubtext}>Answer a flash card</Text>
+                    <TouchableOpacity
+                        style={styles.challengeItem}
+                        onPress={() => setAlarm({ ...alarm, flashMemoryEnabled: !alarm.flashMemoryEnabled })}
+                    >
+                        <View style={[
+                            styles.checkbox,
+                            alarm.flashMemoryEnabled && styles.checkboxActive,
+                        ]}>
+                            {alarm.flashMemoryEnabled && <Text style={styles.checkmark}>✓</Text>}
                         </View>
-                        <Toggle
-                            value={alarm.flashMemoryEnabled}
-                            onValueChange={(v) => setAlarm({ ...alarm, flashMemoryEnabled: v })}
-                        />
+                        <View style={styles.challengeInfo}>
+                            <Text style={styles.challengeTitle}>🧠 Flash Memory Quiz</Text>
+                            <Text style={styles.challengeDesc}>Answer a flashcard to dismiss alarm</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <View style={styles.challengeNote}>
+                        <Text style={styles.challengeNoteText}>
+                            💡 Puzzle challenge is always required
+                        </Text>
                     </View>
                 </Card>
 
@@ -705,49 +728,123 @@ const styles = StyleSheet.create({
     actions: {
         marginTop: spacing.xl,
     },
-    soundOptions: {
+    // Sound List Styles
+    soundListItem: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.surfaceLight,
     },
-    soundButton: {
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        borderRadius: borderRadius.md,
-        backgroundColor: colors.surfaceLight,
+    soundListItemActive: {
+        backgroundColor: 'rgba(245, 166, 35, 0.1)',
     },
-    soundButtonActive: {
+    soundListInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    radioCircle: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 2,
+        borderColor: colors.textMuted,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.md,
+    },
+    radioCircleActive: {
+        borderColor: colors.primary,
+    },
+    radioInner: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
         backgroundColor: colors.primary,
     },
-    soundButtonText: {
+    soundListText: {
+        fontSize: typography.body,
+        color: colors.textSecondary,
+    },
+    soundListTextActive: {
+        color: colors.textPrimary,
+        fontWeight: typography.semibold,
+    },
+    previewIconButton: {
+        padding: spacing.sm,
+    },
+    previewIcon: {
+        fontSize: 20,
+    },
+    stopPreviewButton: {
+        marginTop: spacing.md,
+        alignItems: 'center',
+        padding: spacing.md,
+        backgroundColor: colors.surfaceLight,
+        borderRadius: borderRadius.md,
+    },
+    stopPreviewText: {
         fontSize: typography.caption,
         color: colors.textSecondary,
     },
-    soundButtonTextActive: {
-        color: colors.black,
-        fontWeight: typography.semibold,
+    // Challenge Section Styles
+    sectionSubtitle: {
+        fontSize: typography.caption,
+        color: colors.textMuted,
+        marginBottom: spacing.md,
     },
-    soundRow: {
+    challengeItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.xs,
+        paddingVertical: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.surfaceLight,
     },
-    previewButton: {
-        padding: spacing.xs,
-    },
-    previewButtonText: {
-        fontSize: 16,
-    },
-    stopButton: {
-        marginTop: spacing.md,
+    checkbox: {
+        width: 24,
+        height: 24,
+        borderRadius: borderRadius.sm,
+        borderWidth: 2,
+        borderColor: colors.textMuted,
+        justifyContent: 'center',
         alignItems: 'center',
+        marginRight: spacing.md,
+    },
+    checkboxActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    checkmark: {
+        color: colors.black,
+        fontSize: 14,
+        fontWeight: typography.bold,
+    },
+    challengeInfo: {
+        flex: 1,
+    },
+    challengeTitle: {
+        fontSize: typography.body,
+        color: colors.textPrimary,
+        fontWeight: typography.semibold,
+    },
+    challengeDesc: {
+        fontSize: typography.caption,
+        color: colors.textSecondary,
+        marginTop: 2,
+    },
+    challengeNote: {
+        marginTop: spacing.md,
         padding: spacing.sm,
         backgroundColor: colors.surfaceLight,
         borderRadius: borderRadius.md,
     },
-    stopButtonText: {
-        fontSize: typography.caption,
-        color: colors.textSecondary,
+    challengeNoteText: {
+        fontSize: typography.small,
+        color: colors.textMuted,
+        textAlign: 'center',
     },
     // Modal styles
     modalOverlay: {
