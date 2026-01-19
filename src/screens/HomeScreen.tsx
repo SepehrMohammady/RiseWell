@@ -20,6 +20,7 @@ import { getAlarms, deleteAlarm, saveAlarm } from '../services/StorageService';
 import { scheduleAlarm, cancelAlarm, initializeNotifications } from '../services/NotificationService';
 import { Card, Toggle } from '../components';
 import { colors, spacing, typography, borderRadius } from '../theme';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -186,13 +187,13 @@ export const HomeScreen: React.FC = () => {
                         onPress={() => navigation.navigate('FlashCards')}
                         style={styles.headerButton}
                     >
-                        <Text style={styles.headerButtonText}>🧠</Text>
+                        <MaterialCommunityIcons name="cards-outline" size={26} color={colors.textPrimary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Statistics')}
                         style={styles.headerButton}
                     >
-                        <Text style={styles.headerButtonText}>📊</Text>
+                        <MaterialCommunityIcons name="chart-line" size={26} color={colors.textPrimary} />
                     </TouchableOpacity>
                 </View>
             </View>
