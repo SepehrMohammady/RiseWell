@@ -14,6 +14,7 @@ export interface Alarm {
   snoozeDuration: number; // in minutes
   puzzleMode: 'auto' | 'manual';
   puzzleDifficulty: DifficultyLevel;
+  puzzleEnabled: boolean;
   heartRateEnabled: boolean;
   flashMemoryEnabled: boolean;
   label: string;

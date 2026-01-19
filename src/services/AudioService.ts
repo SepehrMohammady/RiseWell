@@ -65,7 +65,7 @@ export function stopSound(): void {
     }
 }
 
-// Play preview (short clip, no loop)
+// Play preview (loops continuously until stopped)
 export async function playPreview(soundUri: string): Promise<void> {
     return new Promise((resolve, reject) => {
         stopSound();
@@ -87,22 +87,12 @@ export async function playPreview(soundUri: string): Promise<void> {
 
             currentSound = sound;
             sound.setVolume(1.0);
+            sound.setNumberOfLoops(-1); // Loop indefinitely until stopped
 
-            // Play for 3 seconds then stop
             sound.play(() => {
-                sound.release();
-                currentSound = null;
+                // Only called when stopped
                 resolve();
             });
-
-            // Auto-stop after 3 seconds
-            setTimeout(() => {
-                if (currentSound === sound) {
-                    sound.stop();
-                    sound.release();
-                    currentSound = null;
-                }
-            }, 3000);
         });
     });
 }

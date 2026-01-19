@@ -134,16 +134,7 @@ export async function scheduleAlarm(alarm: Alarm): Promise<void> {
                 },
                 ongoing: true,
                 autoCancel: false,
-                actions: [
-                    {
-                        title: '😴 Snooze',
-                        pressAction: { id: 'snooze' },
-                    },
-                    {
-                        title: '✓ Dismiss',
-                        pressAction: { id: 'dismiss' },
-                    },
-                ],
+                // No action buttons - force user to open full-screen and complete challenges
             },
             data: {
                 alarmId: alarm.id,

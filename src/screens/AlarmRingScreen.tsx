@@ -179,7 +179,7 @@ export const AlarmRingScreen: React.FC = () => {
         });
     };
 
-    // Handle Dismiss - requires puzzle + optional HR + optional flash card
+    // Handle Dismiss - optional puzzle + optional HR + optional flash card
     const handleDismiss = () => {
         if (!alarm || isProcessing) return;
         setIsProcessing(true);
@@ -187,15 +187,20 @@ export const AlarmRingScreen: React.FC = () => {
         puzzleStartTime.current = Date.now();
         puzzleErrors.current = 0;
 
-        const difficulty = getDifficultyForDismiss();
-
-        navigation.navigate('Puzzle', {
-            difficulty,
-            puzzleType: 'pattern',
-            onComplete: () => {
-                setDismissState('puzzle_done');
-            },
-        });
+        // Check if puzzle is enabled
+        if (alarm.puzzleEnabled) {
+            const difficulty = getDifficultyForDismiss();
+            navigation.navigate('Puzzle', {
+                difficulty,
+                puzzleType: 'pattern',
+                onComplete: () => {
+                    setDismissState('puzzle_done');
+                },
+            });
+        } else {
+            // Skip puzzle, go directly to next challenge or complete
+            setDismissState('puzzle_done');
+        }
     };
 
     const handleAfterPuzzle = async () => {

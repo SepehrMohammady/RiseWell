@@ -175,27 +175,27 @@ export const HomeScreen: React.FC = () => {
         <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
-            {/* Header - Logo centered and much larger */}
+            {/* Header - Symmetric layout: Flash | Logo | Stats */}
             <View style={styles.header}>
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('FlashCards')}
+                    style={styles.headerButton}
+                >
+                    <MaterialCommunityIcons name="cards-outline" size={26} color={colors.textPrimary} />
+                </TouchableOpacity>
+
                 <Image
                     source={require('../../assets/RiseWell Logo.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
-                <View style={styles.headerButtons}>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('FlashCards')}
-                        style={styles.headerButton}
-                    >
-                        <MaterialCommunityIcons name="cards-outline" size={26} color={colors.textPrimary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Statistics')}
-                        style={styles.headerButton}
-                    >
-                        <MaterialCommunityIcons name="chart-line" size={26} color={colors.textPrimary} />
-                    </TouchableOpacity>
-                </View>
+
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('Statistics')}
+                    style={styles.headerButton}
+                >
+                    <MaterialCommunityIcons name="chart-line" size={26} color={colors.textPrimary} />
+                </TouchableOpacity>
             </View>
 
             {/* Alarm List */}

@@ -20,6 +20,7 @@ import { scheduleAlarm, cancelAlarm } from '../services/NotificationService';
 import { Button, Card, Toggle } from '../components';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { playPreview, stopSound, getSoundDisplayName } from '../services/AudioService';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AlarmEdit'>;
 type RouteProps = RouteProp<RootStackParamList, 'AlarmEdit'>;
@@ -51,6 +52,7 @@ const createDefaultAlarm = (): Alarm => ({
     snoozeDuration: 10,
     puzzleMode: 'auto',
     puzzleDifficulty: 2,
+    puzzleEnabled: true,
     heartRateEnabled: false,
     flashMemoryEnabled: false,
     label: '',
@@ -461,6 +463,25 @@ export const AlarmEditScreen: React.FC = () => {
 
                     <TouchableOpacity
                         style={styles.challengeItem}
+                        onPress={() => setAlarm({ ...alarm, puzzleEnabled: !alarm.puzzleEnabled })}
+                    >
+                        <View style={[
+                            styles.checkbox,
+                            alarm.puzzleEnabled && styles.checkboxActive,
+                        ]}>
+                            {alarm.puzzleEnabled && <Text style={styles.checkmark}>✓</Text>}
+                        </View>
+                        <View style={styles.challengeInfo}>
+                            <View style={styles.challengeTitleRow}>
+                                <MaterialCommunityIcons name="puzzle-outline" size={18} color={colors.primary} />
+                                <Text style={styles.challengeTitle}> Puzzle</Text>
+                            </View>
+                            <Text style={styles.challengeDesc}>Solve a pattern puzzle to dismiss</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.challengeItem}
                         onPress={() => setAlarm({ ...alarm, heartRateEnabled: !alarm.heartRateEnabled })}
                     >
                         <View style={[
@@ -470,7 +491,10 @@ export const AlarmEditScreen: React.FC = () => {
                             {alarm.heartRateEnabled && <Text style={styles.checkmark}>✓</Text>}
                         </View>
                         <View style={styles.challengeInfo}>
-                            <Text style={styles.challengeTitle}>❤️ Heart Rate Check</Text>
+                            <View style={styles.challengeTitleRow}>
+                                <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.error} />
+                                <Text style={styles.challengeTitle}> Heart Rate</Text>
+                            </View>
                             <Text style={styles.challengeDesc}>Measure your pulse to verify alertness</Text>
                         </View>
                     </TouchableOpacity>
@@ -486,16 +510,13 @@ export const AlarmEditScreen: React.FC = () => {
                             {alarm.flashMemoryEnabled && <Text style={styles.checkmark}>✓</Text>}
                         </View>
                         <View style={styles.challengeInfo}>
-                            <Text style={styles.challengeTitle}>🧠 Flash Memory Quiz</Text>
+                            <View style={styles.challengeTitleRow}>
+                                <MaterialCommunityIcons name="cards-outline" size={18} color={colors.success} />
+                                <Text style={styles.challengeTitle}> Flash Memory</Text>
+                            </View>
                             <Text style={styles.challengeDesc}>Answer a flashcard to dismiss alarm</Text>
                         </View>
                     </TouchableOpacity>
-
-                    <View style={styles.challengeNote}>
-                        <Text style={styles.challengeNoteText}>
-                            💡 Puzzle challenge is always required
-                        </Text>
-                    </View>
                 </Card>
 
                 {/* Actions */}
@@ -824,6 +845,10 @@ const styles = StyleSheet.create({
     },
     challengeInfo: {
         flex: 1,
+    },
+    challengeTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     challengeTitle: {
         fontSize: typography.body,

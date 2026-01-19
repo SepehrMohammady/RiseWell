@@ -115,7 +115,8 @@ export const FlashCardsScreen: React.FC = () => {
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
                 {/* Header */}
                 <View style={styles.header}>
@@ -133,6 +134,7 @@ export const FlashCardsScreen: React.FC = () => {
                         renderItem={renderCard}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
                     />
                 ) : (
                     <View style={styles.emptyState}>
