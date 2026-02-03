@@ -132,7 +132,6 @@ export const HomeScreen: React.FC = () => {
     const renderAlarmItem = ({ item }: { item: Alarm }) => (
         <TouchableOpacity
             onPress={() => navigation.navigate('AlarmEdit', { alarmId: item.id })}
-            onLongPress={() => handleDeleteAlarm(item.id)}
             activeOpacity={0.7}
         >
             <Card style={{ ...styles.alarmCard, ...(!item.enabled ? styles.alarmCardDisabled : {}) }}>
@@ -150,20 +149,31 @@ export const HomeScreen: React.FC = () => {
                             </Text>
                         )}
                     </View>
-                    <Toggle
-                        value={item.enabled}
-                        onValueChange={() => handleToggleAlarm(item)}
-                    />
+                    <View style={styles.cardActions}>
+                        <Toggle
+                            value={item.enabled}
+                            onValueChange={() => handleToggleAlarm(item)}
+                        />
+                        <TouchableOpacity
+                            onPress={() => handleDeleteAlarm(item.id)}
+                            style={styles.deleteButton}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <MaterialCommunityIcons name="trash-can-outline" size={22} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
                 <View style={styles.featuresRow}>
                     {item.heartRateEnabled && (
                         <View style={styles.featureBadge}>
-                            <Text style={styles.featureBadgeText}>❤️ HR</Text>
+                            <MaterialCommunityIcons name="heart-pulse" size={14} color={colors.error} />
+                            <Text style={styles.featureBadgeText}> HR</Text>
                         </View>
                     )}
                     {item.flashMemoryEnabled && (
                         <View style={styles.featureBadge}>
-                            <Text style={styles.featureBadgeText}>🧠 Flash</Text>
+                            <MaterialCommunityIcons name="cards-outline" size={14} color={colors.success} />
+                            <Text style={styles.featureBadgeText}> Flash</Text>
                         </View>
                     )}
                 </View>
@@ -307,6 +317,8 @@ const styles = StyleSheet.create({
         marginTop: spacing.sm,
     },
     featureBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: colors.surfaceLight,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
@@ -315,6 +327,14 @@ const styles = StyleSheet.create({
     featureBadgeText: {
         fontSize: typography.small,
         color: colors.textSecondary,
+    },
+    cardActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    deleteButton: {
+        padding: spacing.xs,
     },
     emptyState: {
         flex: 1,

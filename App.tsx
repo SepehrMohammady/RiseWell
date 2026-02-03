@@ -94,12 +94,23 @@ function App(): React.JSX.Element {
   const checkInitialNotification = async () => {
     const initialNotification = await notifee.getInitialNotification();
     if (initialNotification) {
-      const { alarmId } = (initialNotification.notification.data || {}) as { alarmId?: string };
-      if (alarmId) {
+      const { alarmId, type: notificationType } = (initialNotification.notification.data || {}) as {
+        alarmId?: string;
+        type?: string;
+      };
+      if (alarmId && (notificationType === 'alarm' || notificationType === 'snooze')) {
         const action = initialNotification.pressAction?.id as 'dismiss' | 'snooze' | undefined;
-        // Wait for navigation to be ready
+        // Wait for navigation to be ready, then reset stack to AlarmRing
         setTimeout(() => {
-          navigateToAlarm(alarmId, action || null);
+          if (navigationRef.current) {
+            navigationRef.current.reset({
+              index: 0,
+              routes: [
+                { name: 'Home' },
+                { name: 'AlarmRing', params: { alarmId, action: action || undefined } },
+              ],
+            });
+          }
         }, 500);
       }
     }
@@ -107,7 +118,14 @@ function App(): React.JSX.Element {
 
   const navigateToAlarm = (alarmId: string, action: 'dismiss' | 'snooze' | null) => {
     if (navigationRef.current) {
-      navigationRef.current.navigate('AlarmRing', { alarmId, action: action || undefined });
+      // Reset navigation stack to ensure we go to AlarmRing
+      navigationRef.current.reset({
+        index: 1,
+        routes: [
+          { name: 'Home' },
+          { name: 'AlarmRing', params: { alarmId, action: action || undefined } },
+        ],
+      });
     }
   };
 

@@ -173,6 +173,9 @@ export const AlarmRingScreen: React.FC = () => {
         await scheduleSnooze(alarm, alarm.snoozeDuration);
         await cancelActiveAlarm(alarm.id);
 
+        // Reset processing state before navigation
+        setIsProcessing(false);
+
         navigation.reset({
             index: 0,
             routes: [{ name: 'Home' }],

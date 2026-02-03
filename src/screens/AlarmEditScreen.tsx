@@ -102,6 +102,9 @@ export const AlarmEditScreen: React.FC = () => {
     };
 
     const handleSave = async () => {
+        // Stop any playing audio preview
+        stopSound();
+
         const updatedAlarm = {
             ...alarm,
             time: `${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`,
@@ -127,6 +130,8 @@ export const AlarmEditScreen: React.FC = () => {
                     text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
+                        // Stop any playing audio preview
+                        stopSound();
                         await cancelAlarm(alarm.id);
                         await deleteAlarm(alarm.id);
                         navigation.goBack();
