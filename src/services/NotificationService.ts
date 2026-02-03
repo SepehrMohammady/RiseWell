@@ -7,6 +7,7 @@ import notifee, {
     TriggerType,
 } from '@notifee/react-native';
 import { Alarm, ScheduleType } from '../types';
+import { scheduleNativeAlarm, cancelNativeAlarm, isNativeAlarmAvailable } from './NativeAlarmService';
 
 // Channel IDs for different sounds
 const CHANNEL_PREFIX = 'risewell_alarm_';
@@ -150,12 +151,32 @@ export async function scheduleAlarm(alarm: Alarm): Promise<void> {
         trigger,
     );
 
+    // Also schedule native alarm for guaranteed delivery when app is killed
+    if (isNativeAlarmAvailable()) {
+        try {
+            await scheduleNativeAlarm(alarm);
+            console.log(`Native alarm also scheduled for ${alarm.id}`);
+        } catch (error) {
+            console.warn('Native alarm scheduling failed, using notifee only:', error);
+        }
+    }
+
     console.log(`Scheduled alarm ${alarm.id} for ${nextTime.toISOString()} with sound ${alarm.soundUri}`);
 }
 
 // Cancel an alarm notification
 export async function cancelAlarm(alarmId: string): Promise<void> {
     await notifee.cancelNotification(alarmId);
+
+    // Also cancel native alarm
+    if (isNativeAlarmAvailable()) {
+        try {
+            await cancelNativeAlarm(alarmId);
+        } catch (error) {
+            console.warn('Native alarm cancellation failed:', error);
+        }
+    }
+
     console.log(`Cancelled alarm ${alarmId}`);
 }
 
