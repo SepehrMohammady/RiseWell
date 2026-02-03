@@ -8,6 +8,7 @@ import {
     Animated,
     StatusBar,
     BackHandler,
+    TouchableOpacity,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,8 +17,8 @@ import { getAlarmById, saveWakeRecord, generateId, getFlashCards } from '../serv
 import { cancelActiveAlarm, scheduleSnooze, scheduleAlarm } from '../services/NotificationService';
 import { calculateWakefulnessScore } from '../services/ScoringService';
 import { playSound, stopSound } from '../services/AudioService';
-import { Button } from '../components';
 import { colors, spacing, typography } from '../theme';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AlarmRing'>;
 type RouteProps = RouteProp<RootStackParamList, 'AlarmRing'>;
@@ -321,40 +322,52 @@ export const AlarmRingScreen: React.FC = () => {
 
                 {snoozeCount > 0 && (
                     <View style={styles.snoozeBadge}>
+                        <MaterialCommunityIcons name="sleep" size={18} color={colors.primary} />
                         <Text style={styles.snoozeBadgeText}>
-                            😴 Snoozed {snoozeCount}x
+                            {' '}Snoozed {snoozeCount}x
                         </Text>
                     </View>
                 )}
 
                 <View style={styles.featuresInfo}>
                     {alarm.heartRateEnabled && (
-                        <Text style={styles.featureText}>❤️ Heart rate check required</Text>
+                        <View style={styles.featureRow}>
+                            <MaterialCommunityIcons name="heart-pulse" size={16} color={colors.error} />
+                            <Text style={styles.featureText}> Heart rate check required</Text>
+                        </View>
                     )}
                     {alarm.flashMemoryEnabled && (
-                        <Text style={styles.featureText}>🧠 Flash card quiz required</Text>
+                        <View style={styles.featureRow}>
+                            <MaterialCommunityIcons name="cards-outline" size={16} color={colors.success} />
+                            <Text style={styles.featureText}> Flash card quiz required</Text>
+                        </View>
                     )}
                 </View>
 
                 <View style={styles.actions}>
-                    <Button
-                        title={`😴 Snooze (${alarm.snoozeDuration}min)`}
+                    <TouchableOpacity
+                        style={[styles.snoozeButton, isProcessing && styles.buttonDisabled]}
                         onPress={handleSnooze}
-                        variant="secondary"
-                        size="large"
-                        fullWidth
                         disabled={isProcessing}
-                    />
+                        activeOpacity={0.7}
+                    >
+                        <MaterialCommunityIcons name="sleep" size={22} color={isProcessing ? colors.textMuted : colors.textPrimary} />
+                        <Text style={[styles.snoozeButtonText, isProcessing && styles.buttonTextDisabled]}>
+                            {' '}Snooze ({alarm.snoozeDuration}min)
+                        </Text>
+                    </TouchableOpacity>
 
-                    <Button
-                        title="🌅 Dismiss Alarm"
+                    <TouchableOpacity
+                        style={[styles.dismissButton, isProcessing && styles.buttonDisabled]}
                         onPress={handleDismiss}
-                        variant="primary"
-                        size="large"
-                        fullWidth
-                        style={{ marginTop: spacing.lg }}
                         disabled={isProcessing}
-                    />
+                        activeOpacity={0.7}
+                    >
+                        <MaterialCommunityIcons name="weather-sunny" size={22} color={isProcessing ? colors.textMuted : colors.black} />
+                        <Text style={[styles.dismissButtonText, isProcessing && styles.buttonTextDisabled]}>
+                            {' '}Dismiss Alarm
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 <Text style={styles.hintText}>
@@ -416,6 +429,8 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
     },
     snoozeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: colors.warning,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.sm,
@@ -431,14 +446,55 @@ const styles = StyleSheet.create({
         marginTop: spacing.lg,
         alignItems: 'center',
     },
+    featureRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: spacing.xs,
+    },
     featureText: {
         fontSize: typography.caption,
         color: colors.textSecondary,
-        marginTop: spacing.xs,
     },
     actions: {
         width: '100%',
         marginTop: spacing.xxl,
+    },
+    snoozeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.surface,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.xl,
+        borderRadius: 12,
+        width: '100%',
+    },
+    snoozeButtonText: {
+        fontSize: typography.h3,
+        fontWeight: typography.semibold,
+        color: colors.textPrimary,
+    },
+    dismissButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.xl,
+        borderRadius: 12,
+        width: '100%',
+        marginTop: spacing.lg,
+    },
+    dismissButtonText: {
+        fontSize: typography.h3,
+        fontWeight: typography.semibold,
+        color: colors.black,
+    },
+    buttonDisabled: {
+        backgroundColor: colors.surfaceLight,
+    },
+    buttonTextDisabled: {
+        color: colors.textMuted,
     },
     hintText: {
         fontSize: typography.small,

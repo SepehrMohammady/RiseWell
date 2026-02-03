@@ -224,8 +224,6 @@ export async function scheduleSnooze(alarm: Alarm, snoozeDurationMinutes: number
                     id: 'default',
                     launchActivity: 'com.risewell.MainActivity',
                 },
-                lights: true,
-                lightColor: '#FFB347',
             },
             data: {
                 alarmId: alarm.id,
